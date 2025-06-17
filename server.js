@@ -47,18 +47,24 @@ app.get('/debug/env', (req, res) => {
  */
 app.post('/api/twitter/exchange-and-connect', async (req, res) => {
     console.log('🚀 Nhận request từ frontend:', {
-        body: req.body,
+        body: {
+            authorizationCode: req.body.authorizationCode ? req.body.authorizationCode.substring(0, 20) + '...' : 'Missing',
+            codeVerifier: req.body.codeVerifier ? req.body.codeVerifier.substring(0, 20) + '...' : 'Missing',
+            walletAddress: req.body.walletAddress || 'Missing',
+            redirectUri: req.body.redirectUri || 'Missing'
+        },
         timestamp: new Date().toISOString()
     });
 
-    const { authorizationCode, codeVerifier, walletAddress } = req.body;
+    const { authorizationCode, codeVerifier, walletAddress, redirectUri } = req.body;
 
     // Validate required fields
     if (!authorizationCode || !codeVerifier || !walletAddress) {
         console.error('❌ Thiếu thông tin bắt buộc:', {
             authorizationCode: !!authorizationCode,
             codeVerifier: !!codeVerifier,
-            walletAddress: !!walletAddress
+            walletAddress: !!walletAddress,
+            redirectUri: !!redirectUri
         });
         return res.status(400).json({ 
             success: false,
@@ -83,11 +89,13 @@ app.post('/api/twitter/exchange-and-connect', async (req, res) => {
             success: false,
             message: 'Lỗi cấu hình server: thiếu biến môi trường cần thiết'
         });
-    }
-
-    try {
+    }    try {
         // Step 1: Exchange authorization code for access token from Twitter
         console.log('📡 Bước 1: Đổi authorization code lấy access token từ Twitter...');
+        
+        // Sử dụng redirect URI từ frontend, fallback về env nếu không có
+        const finalRedirectUri = redirectUri || twitterRedirectUri;
+        console.log('🔍 Sử dụng redirect URI:', finalRedirectUri);
         
         const twitterTokenUrl = 'https://api.x.com/2/oauth2/token';
         const basicAuth = Buffer.from(`${twitterClientId}:${twitterClientSecret}`).toString('base64');
@@ -95,24 +103,25 @@ app.post('/api/twitter/exchange-and-connect', async (req, res) => {
         const twitterTokenParams = new URLSearchParams();
         twitterTokenParams.append('grant_type', 'authorization_code');
         twitterTokenParams.append('code', authorizationCode);
-        twitterTokenParams.append('redirect_uri', twitterRedirectUri);
+        twitterTokenParams.append('redirect_uri', finalRedirectUri); // Sử dụng redirect URI từ frontend
         twitterTokenParams.append('client_id', twitterClientId);
-        twitterTokenParams.append('code_verifier', codeVerifier);        console.log('📤 Gửi request đến Twitter API:', {
+        twitterTokenParams.append('code_verifier', codeVerifier);
+
+        console.log('📤 Gửi request đến Twitter API:', {
             url: twitterTokenUrl,
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'Authorization': `Basic ${basicAuth.substring(0, 20)}...`
-            },
+                'Authorization': `Basic ${basicAuth.substring(0, 20)}...`            },
             params: {
                 grant_type: 'authorization_code',
                 code: `${authorizationCode.substring(0, 20)}...`,
-                redirect_uri: twitterRedirectUri,
+                redirect_uri: finalRedirectUri,
                 client_id: twitterClientId,
                 code_verifier: `${codeVerifier.substring(0, 20)}...`
             }
         });
 
-        console.log('🔍 Chi tiết redirect_uri đang sử dụng:', twitterRedirectUri);
+        console.log('🔍 Chi tiết redirect_uri đang sử dụng:', finalRedirectUri);
 
         const twitterResponse = await axios.post(twitterTokenUrl, twitterTokenParams.toString(), {
             headers: {
