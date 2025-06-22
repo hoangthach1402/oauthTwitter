@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  twitter-oauth-backend-dev:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: twitter-oauth-backend-dev
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - TWITTER_CLIENT_ID=${TWITTER_CLIENT_ID}
+      - TWITTER_CLIENT_SECRET=${TWITTER_CLIENT_SECRET}
+      - TWITTER_REDIRECT_URI=${TWITTER_REDIRECT_URI}
+      - FIRESTARTER_API_BASE_URL=${FIRESTARTER_API_BASE_URL}
+    volumes:
+      # Mount source code for hot reloading in development
+      - ./server.js:/app/server.js:ro
+      - ./package.json:/app/package.json:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - twitter-oauth-dev-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+networks:
+  twitter-oauth-dev-network:
+    driver: bridge
