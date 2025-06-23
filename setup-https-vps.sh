@@ -61,21 +61,8 @@ server {
         proxy_set_header X-Forwarded-Host $server_name;
         proxy_cache_bypass $http_upgrade;
         
-        # CORS headers for API
-        add_header Access-Control-Allow-Origin *;
-        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS, PUT, DELETE";
-        add_header Access-Control-Allow-Headers "Origin, Content-Type, Accept, Authorization, X-Requested-With";
-        
-        # Handle preflight requests
-        if ($request_method = 'OPTIONS') {
-            add_header Access-Control-Allow-Origin *;
-            add_header Access-Control-Allow-Methods "GET, POST, OPTIONS, PUT, DELETE";
-            add_header Access-Control-Allow-Headers "Origin, Content-Type, Accept, Authorization, X-Requested-With";
-            add_header Access-Control-Max-Age 1728000;
-            add_header Content-Type 'text/plain; charset=utf-8';
-            add_header Content-Length 0;
-            return 204;
-        }
+        # Let Node.js handle CORS completely - don't interfere
+        # proxy_hide_header directives removed to allow CORS headers through
     }
     
     # Security headers

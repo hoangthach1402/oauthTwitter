@@ -8,8 +8,8 @@ const PORT = process.env.PORT || 3001;
 
 // Enable CORS for all origins (development mode)
 app.use(cors({
-  origin: true, // Cho phép tất cả origins
-  credentials: true,
+  origin: '*', // Cho phép tất cả origins
+  credentials: false, // Set to false when origin is '*'
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
