@@ -2,13 +2,23 @@ require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const https = require('https');
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 
 // 🔧 Environment Variables - Hardcoded for simplicity
 const ENV_CONFIG = {
-  NODE_ENV: process.env.NODE_ENV || 'production',
+  NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: process.env.PORT || 3001,
+  HTTPS_PORT: process.env.HTTPS_PORT || 3443,
+  ENABLE_HTTPS: process.env.ENABLE_HTTPS === 'true' || process.env.NODE_ENV === 'development',
+  
+  // SSL Configuration
+  SSL_KEY_PATH: process.env.SSL_KEY_PATH || './certs/localhost.key',
+  SSL_CERT_PATH: process.env.SSL_CERT_PATH || './certs/localhost.crt',
   
   // Twitter OAuth Configuration
   TWITTER_CLIENT_ID: process.env.TWITTER_CLIENT_ID || 'T3pWbWVEY29pR3doaldteWhUdUI6MTpjaQ',
@@ -16,7 +26,8 @@ const ENV_CONFIG = {
   TWITTER_REDIRECT_URI: process.env.TWITTER_REDIRECT_URI || 'https://localhost:5173/auth/twitter/callback',
   
   // FireStarter API Configuration
-  FIRESTARTER_API_BASE_URL: process.env.FIRESTARTER_API_BASE_URL || 'https://api2.khanhdev.tech/api/v1/trustcore',
+  FIRESTARTER_API_BASE_URL: process.env.FIRESTARTER_API_BASE_URL || 
+    (process.env.NODE_ENV === 'development' ? 'http://localhost:3002/api/v1/trustcore' : 'https://api2.khanhdev.tech/api/v1/trustcore'),
   
   // Additional Production URLs
   PRODUCTION_REDIRECT_URI: process.env.PRODUCTION_REDIRECT_URI || 'https://firestarter-evm-fe-five.vercel.app/auth/twitter/callback',
@@ -34,6 +45,9 @@ const ENV_CONFIG = {
 console.log('🔧 Environment Configuration Loaded:', {
   NODE_ENV: ENV_CONFIG.NODE_ENV,
   PORT: ENV_CONFIG.PORT,
+  HTTPS_PORT: ENV_CONFIG.HTTPS_PORT,
+  ENABLE_HTTPS: ENV_CONFIG.ENABLE_HTTPS,
+  SSL_CERT_EXISTS: fs.existsSync(ENV_CONFIG.SSL_CERT_PATH),
   TWITTER_CLIENT_ID: ENV_CONFIG.TWITTER_CLIENT_ID ? `${ENV_CONFIG.TWITTER_CLIENT_ID.substring(0, 10)}...` : 'Not set',
   TWITTER_REDIRECT_URI: ENV_CONFIG.TWITTER_REDIRECT_URI,
   FIRESTARTER_API_BASE_URL: ENV_CONFIG.FIRESTARTER_API_BASE_URL,
@@ -264,11 +278,59 @@ app.post('/api/twitter/exchange-and-connect', async (req, res) => {
 });
 
 // Start server
-app.listen(3001, () => {
-    console.log(`🚀 Twitter OAuth Backend is running on http://localhost:${PORT}`);
-    console.log(`🌐 CORS enabled for: ALL ORIGINS (development mode)`);
-    console.log(`🔧 Health check: http://localhost:${PORT}/health`);
-    console.log(`🛠️  Debug env vars: http://localhost:${PORT}/debug/env`);
-    console.log(`📡 Main API endpoint: POST http://localhost:${PORT}/api/twitter/exchange-and-connect`);
-    console.log(`📅 Started at: ${new Date().toISOString()}`);
-});
+// Start server
+const startServer = () => {
+  // HTTP Server
+  const httpServer = http.createServer(app);
+  httpServer.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 HTTP Server running on http://0.0.0.0:${PORT}`);
+  });
+
+  // HTTPS Server (if enabled and certificates exist)
+  if (ENV_CONFIG.ENABLE_HTTPS) {
+    try {
+      if (fs.existsSync(ENV_CONFIG.SSL_KEY_PATH) && fs.existsSync(ENV_CONFIG.SSL_CERT_PATH)) {
+        const httpsOptions = {
+          key: fs.readFileSync(ENV_CONFIG.SSL_KEY_PATH),
+          cert: fs.readFileSync(ENV_CONFIG.SSL_CERT_PATH)
+        };
+        
+        const httpsServer = https.createServer(httpsOptions, app);
+        httpsServer.listen(ENV_CONFIG.HTTPS_PORT, '0.0.0.0', () => {
+          console.log(`🔒 HTTPS Server running on https://0.0.0.0:${ENV_CONFIG.HTTPS_PORT}`);
+          console.log(`🔒 Local HTTPS: https://localhost:${ENV_CONFIG.HTTPS_PORT}`);
+        });
+      } else {
+        console.log(`⚠️  HTTPS certificates not found at:`);
+        console.log(`   Key: ${ENV_CONFIG.SSL_KEY_PATH}`);
+        console.log(`   Cert: ${ENV_CONFIG.SSL_CERT_PATH}`);
+        console.log(`   Run: npm run create-cert to generate certificates`);
+      }
+    } catch (error) {
+      console.error('❌ HTTPS setup failed:', error.message);
+    }
+  }
+
+  console.log(`🌐 Environment: ${ENV_CONFIG.NODE_ENV}`);
+  console.log(`🔧 CORS Origins: ${ENV_CONFIG.CORS_ORIGINS}`);
+  console.log(`� Twitter Client ID: ${ENV_CONFIG.TWITTER_CLIENT_ID ? ENV_CONFIG.TWITTER_CLIENT_ID.substring(0, 10) + '...' : 'Not set'}`);
+  console.log(`🔗 Twitter Redirect URI: ${ENV_CONFIG.TWITTER_REDIRECT_URI}`);
+  console.log(`🔗 Production Redirect URI: ${ENV_CONFIG.PRODUCTION_REDIRECT_URI}`);
+  console.log(`🔥 FireStarter API: ${ENV_CONFIG.FIRESTARTER_API_BASE_URL}`);
+  console.log(`🌍 Frontend Domain: ${ENV_CONFIG.FRONTEND_DOMAIN}`);
+  console.log('');
+  console.log('📍 Available Endpoints:');
+  console.log(`   GET  http://0.0.0.0:${PORT}/health - Health check`);
+  console.log(`   GET  http://0.0.0.0:${PORT}/debug/env - Environment debug`);
+  console.log(`   POST http://0.0.0.0:${PORT}/api/twitter/exchange-and-connect - Main API`);
+  if (ENV_CONFIG.ENABLE_HTTPS && fs.existsSync(ENV_CONFIG.SSL_CERT_PATH)) {
+    console.log(`   GET  https://localhost:${ENV_CONFIG.HTTPS_PORT}/health - HTTPS Health check`);
+    console.log(`   POST https://localhost:${ENV_CONFIG.HTTPS_PORT}/api/twitter/exchange-and-connect - HTTPS Main API`);
+  }
+  console.log('');
+  console.log(`📅 Server started at: ${new Date().toISOString()}`);
+  console.log(`⚡ Process ID: ${process.pid}`);
+  console.log(`💾 Memory usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`);
+};
+
+startServer();

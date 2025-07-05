@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  oauth-backend-dev:
+    build: .
+    container_name: oauth-twitter-backend-dev
+    ports:
+      - "3001:3001"  # HTTP
+      - "3443:3443"  # HTTPS
+    volumes:
+      - ./certs:/app/certs:ro  # Mount SSL certificates
+    environment:
+      - NODE_ENV=development
+      - ENABLE_HTTPS=true
+      - PORT=3001
+      - HTTPS_PORT=3443
+      - TWITTER_CLIENT_ID=T3pWbWVEY29pR3doaldteWhUdUI6MTpjaQ
+      - TWITTER_CLIENT_SECRET=9R8RECRDHOuFpZCT_7U4FwrPYI4WjAGllHmJq52
+      - TWITTER_REDIRECT_URI=https://localhost:5173/auth/twitter/callback
+      - FIRESTARTER_API_BASE_URL=https://api2.khanhdev.tech/api/v1/trustcore
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

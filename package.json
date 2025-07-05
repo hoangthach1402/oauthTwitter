@@ -6,7 +6,16 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "dev:https": "set ENABLE_HTTPS=true && node server.js",
+    "mock-api": "node mock-firestarter-api.js",
+    "dev:full": "start \"Mock FireStarter API\" npm run mock-api && npm run dev",
+    "dev:full:https": "start \"Mock FireStarter API\" npm run mock-api && npm run dev:https",
+    "create-cert": "bash scripts/create-ssl-cert.sh",
+    "create-cert:win": "scripts/create-ssl-cert.bat",
+    "docker:build": "docker build -t oauth-twitter-backend .",
+    "docker:run": "docker run -d --name oauth-twitter-backend -p 3001:3001 -p 3443:3443 oauth-twitter-backend",
+    "docker:stop": "docker stop oauth-twitter-backend && docker rm oauth-twitter-backend"
   },
   "keywords": [],
   "author": "",

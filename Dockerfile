@@ -49,8 +49,8 @@ RUN rm -rf \
 # Switch to non-root user
 USER nodejs
 
-# Expose the port the app runs on
-EXPOSE 3001
+# Expose the ports the app runs on (HTTP and HTTPS)
+EXPOSE 3001 3443
 
 # Add health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
