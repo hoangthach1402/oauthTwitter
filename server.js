@@ -4,15 +4,55 @@ const axios = require('axios');
 const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+
+// 🔧 Environment Variables - Hardcoded for simplicity
+const ENV_CONFIG = {
+  NODE_ENV: process.env.NODE_ENV || 'production',
+  PORT: process.env.PORT || 3001,
+  
+  // Twitter OAuth Configuration
+  TWITTER_CLIENT_ID: process.env.TWITTER_CLIENT_ID || 'T3pWbWVEY29pR3doaldteWhUdUI6MTpjaQ',
+  TWITTER_CLIENT_SECRET: process.env.TWITTER_CLIENT_SECRET || '9R8RECRDHOuFpZCT_7U4FwrPYI4WjAGllHmJq52',
+  TWITTER_REDIRECT_URI: process.env.TWITTER_REDIRECT_URI || 'https://localhost:5173/auth/twitter/callback',
+  
+  // FireStarter API Configuration
+  FIRESTARTER_API_BASE_URL: process.env.FIRESTARTER_API_BASE_URL || 'https://api2.khanhdev.tech/api/v1/trustcore',
+  
+  // Additional Production URLs
+  PRODUCTION_REDIRECT_URI: process.env.PRODUCTION_REDIRECT_URI || 'https://firestarter-evm-fe-five.vercel.app/auth/twitter/callback',
+  FRONTEND_DOMAIN: process.env.FRONTEND_DOMAIN || 'https://firestarter-evm-fe-five.vercel.app',
+  
+  // API Configuration
+  TWITTER_API_URL: process.env.TWITTER_API_URL || 'https://api.x.com/2/oauth2/token',
+  
+  // Server Configuration  
+  CORS_ORIGINS: process.env.CORS_ORIGINS || '*',
+  MAX_REQUEST_SIZE: process.env.MAX_REQUEST_SIZE || '10mb',
+  REQUEST_TIMEOUT: process.env.REQUEST_TIMEOUT || 30000
+};
+
+console.log('🔧 Environment Configuration Loaded:', {
+  NODE_ENV: ENV_CONFIG.NODE_ENV,
+  PORT: ENV_CONFIG.PORT,
+  TWITTER_CLIENT_ID: ENV_CONFIG.TWITTER_CLIENT_ID ? `${ENV_CONFIG.TWITTER_CLIENT_ID.substring(0, 10)}...` : 'Not set',
+  TWITTER_REDIRECT_URI: ENV_CONFIG.TWITTER_REDIRECT_URI,
+  FIRESTARTER_API_BASE_URL: ENV_CONFIG.FIRESTARTER_API_BASE_URL,
+  PRODUCTION_REDIRECT_URI: ENV_CONFIG.PRODUCTION_REDIRECT_URI,
+  FRONTEND_DOMAIN: ENV_CONFIG.FRONTEND_DOMAIN,
+  timestamp: new Date().toISOString()
+});
+
+const PORT = ENV_CONFIG.PORT;
 
 // Enable CORS for all origins (development mode)
+const corsOrigins = ENV_CONFIG.CORS_ORIGINS === '*' ? '*' : ENV_CONFIG.CORS_ORIGINS.split(',');
+
 app.use(cors({
-  origin: '*', // Cho phép tất cả origins
-  credentials: false, // Set to false when origin is '*'
+  origin: corsOrigins,
+  credentials: ENV_CONFIG.CORS_ORIGINS === '*' ? false : true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin'],
+  optionsSuccessStatus: 200
 }));
 
 // Additional CORS middleware for error responses
@@ -24,9 +64,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Body parser middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Body parser middleware with size limits
+app.use(express.json({ limit: ENV_CONFIG.MAX_REQUEST_SIZE }));
+app.use(express.urlencoded({ extended: true, limit: ENV_CONFIG.MAX_REQUEST_SIZE }));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -41,12 +81,20 @@ app.get('/health', (req, res) => {
 app.get('/debug/env', (req, res) => {
   res.json({
     status: 'Environment Variables Check',
-    TWITTER_CLIENT_ID: process.env.TWITTER_CLIENT_ID ? `Set (${process.env.TWITTER_CLIENT_ID.substring(0, 10)}...)` : 'Not set',
-    TWITTER_CLIENT_SECRET: process.env.TWITTER_CLIENT_SECRET ? `Set (${process.env.TWITTER_CLIENT_SECRET.substring(0, 10)}...)` : 'Not set',
-    TWITTER_REDIRECT_URI: process.env.TWITTER_REDIRECT_URI || 'Not set',
-    FIRESTARTER_API_BASE_URL: process.env.FIRESTARTER_API_BASE_URL || 'Not set',
-    PORT: process.env.PORT || '3001 (default)',
-    timestamp: new Date().toISOString()
+    NODE_ENV: ENV_CONFIG.NODE_ENV,
+    PORT: ENV_CONFIG.PORT,
+    TWITTER_CLIENT_ID: ENV_CONFIG.TWITTER_CLIENT_ID ? `Set (${ENV_CONFIG.TWITTER_CLIENT_ID.substring(0, 10)}...)` : 'Not set',
+    TWITTER_CLIENT_SECRET: ENV_CONFIG.TWITTER_CLIENT_SECRET ? `Set (${ENV_CONFIG.TWITTER_CLIENT_SECRET.substring(0, 10)}...)` : 'Not set',
+    TWITTER_REDIRECT_URI: ENV_CONFIG.TWITTER_REDIRECT_URI,
+    PRODUCTION_REDIRECT_URI: ENV_CONFIG.PRODUCTION_REDIRECT_URI,
+    FIRESTARTER_API_BASE_URL: ENV_CONFIG.FIRESTARTER_API_BASE_URL,
+    FRONTEND_DOMAIN: ENV_CONFIG.FRONTEND_DOMAIN,
+    TWITTER_API_URL: ENV_CONFIG.TWITTER_API_URL,
+    CORS_ORIGINS: ENV_CONFIG.CORS_ORIGINS,
+    MAX_REQUEST_SIZE: ENV_CONFIG.MAX_REQUEST_SIZE,
+    REQUEST_TIMEOUT: ENV_CONFIG.REQUEST_TIMEOUT,
+    server_time: new Date().toISOString(),
+    uptime: process.uptime() + ' seconds'
   });
 });
 
@@ -83,10 +131,10 @@ app.post('/api/twitter/exchange-and-connect', async (req, res) => {
     }
 
     // Validate environment variables
-    const twitterClientId = process.env.TWITTER_CLIENT_ID;
-    const twitterClientSecret = process.env.TWITTER_CLIENT_SECRET;
-    const twitterRedirectUri = process.env.TWITTER_REDIRECT_URI;
-    const firestarterApiBaseUrl = process.env.FIRESTARTER_API_BASE_URL;
+    const twitterClientId = ENV_CONFIG.TWITTER_CLIENT_ID;
+    const twitterClientSecret = ENV_CONFIG.TWITTER_CLIENT_SECRET;
+    const twitterRedirectUri = ENV_CONFIG.TWITTER_REDIRECT_URI;
+    const firestarterApiBaseUrl = ENV_CONFIG.FIRESTARTER_API_BASE_URL;
 
     if (!twitterClientId || !twitterClientSecret || !twitterRedirectUri || !firestarterApiBaseUrl) {
         console.error('❌ Thiếu biến môi trường:', {
@@ -107,7 +155,7 @@ app.post('/api/twitter/exchange-and-connect', async (req, res) => {
         const finalRedirectUri = redirectUri || twitterRedirectUri;
         console.log('🔍 Sử dụng redirect URI:', finalRedirectUri);
         
-        const twitterTokenUrl = 'https://api.x.com/2/oauth2/token';
+        const twitterTokenUrl = ENV_CONFIG.TWITTER_API_URL;
         const basicAuth = Buffer.from(`${twitterClientId}:${twitterClientSecret}`).toString('base64');
         
         const twitterTokenParams = new URLSearchParams();
@@ -137,7 +185,8 @@ app.post('/api/twitter/exchange-and-connect', async (req, res) => {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'Authorization': `Basic ${basicAuth}`
-            }
+            },
+            timeout: ENV_CONFIG.REQUEST_TIMEOUT
         });
 
         const twitterAccessToken = twitterResponse.data.access_token;
@@ -171,7 +220,8 @@ app.post('/api/twitter/exchange-and-connect', async (req, res) => {
         const firestarterResponse = await axios.post(firestarterConnectUrl, firestarterPayload, {
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            timeout: ENV_CONFIG.REQUEST_TIMEOUT
         });
         
         console.log('✅ Thành công từ FireStarter API:', firestarterResponse.data);
@@ -214,7 +264,7 @@ app.post('/api/twitter/exchange-and-connect', async (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(3001, () => {
     console.log(`🚀 Twitter OAuth Backend is running on http://localhost:${PORT}`);
     console.log(`🌐 CORS enabled for: ALL ORIGINS (development mode)`);
     console.log(`🔧 Health check: http://localhost:${PORT}/health`);
