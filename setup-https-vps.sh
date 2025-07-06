@@ -108,7 +108,7 @@ PORT=3001
 TWITTER_CLIENT_ID=T3pWbWVEY29pR3doaldteWhUdUI6MTpjaQ
 TWITTER_CLIENT_SECRET=9R8RECRDHOuFpZCT_7U4FwrPYI4WjAGllHmJq52
 TWITTER_REDIRECT_URI=https://localhost:5173/auth/twitter/callback
-FIRESTARTER_API_BASE_URL=https://api2.khanhdev.tech/api/v1/trustcore
+FIRESTARTER_API_BASE_URL=https://api-firestarter.earnai.art/api/v1/trustcore
 EOF
 
 # 12. Restart Docker container with new config

@@ -27,7 +27,7 @@ const ENV_CONFIG = {
   
   // FireStarter API Configuration
   FIRESTARTER_API_BASE_URL: process.env.FIRESTARTER_API_BASE_URL || 
-    (process.env.NODE_ENV === 'development' ? 'http://localhost:3002/api/v1/trustcore' : 'https://api2.khanhdev.tech/api/v1/trustcore'),
+    (process.env.NODE_ENV === 'development' ? 'http://localhost:3002/api/v1/trustcore' : 'https://api-firestarter.earnai.art/api/v1/trustcore'),
   
   // Additional Production URLs
   PRODUCTION_REDIRECT_URI: process.env.PRODUCTION_REDIRECT_URI || 'https://firestarter-evm-fe-five.vercel.app/auth/twitter/callback',

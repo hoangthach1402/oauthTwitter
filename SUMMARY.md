@@ -58,7 +58,7 @@ backendTwitter/
 TWITTER_CLIENT_ID=T3pWbWVEY2JjQ2xQWVEtWW1ESDdIQVNfSmhGYXZ4V3B4YkJLVmpRNXg5Z0pMOjE3Mzc4NjkzMzI5NDU6MToxOmFjOjE
 TWITTER_CLIENT_SECRET=9R8RECRDHO8EYBIBLp6GEUgCCQAJtEaXykNJNYlgWXHYkGcVkXaYHZVmPeW7MXVE
 TWITTER_REDIRECT_URI=http://localhost:3001/auth/twitter/callback
-FIRESTARTER_API_BASE_URL=https://api2.khanhdev.tech/api/v1/trustcore
+FIRESTARTER_API_BASE_URL=https://api-firestarter.earnai.art/api/v1/trustcore
 PORT=3001
 ```
 
@@ -112,7 +112,7 @@ PORT=3001
   "TWITTER_CLIENT_ID": "Set (T3pWbWVEY2...)",
   "TWITTER_CLIENT_SECRET": "Set (9R8RECRDHO...)",
   "TWITTER_REDIRECT_URI": "http://localhost:3001/auth/twitter/callback",
-  "FIRESTARTER_API_BASE_URL": "https://api2.khanhdev.tech/api/v1/trustcore",
+  "FIRESTARTER_API_BASE_URL": "https://api-firestarter.earnai.art/api/v1/trustcore",
   "PORT": "3001",
   "timestamp": "2025-06-16T08:41:20.263Z"
 }
