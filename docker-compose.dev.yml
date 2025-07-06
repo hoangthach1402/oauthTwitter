@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   twitter-oauth-backend-dev:
     build: 
@@ -8,13 +6,9 @@ services:
     container_name: twitter-oauth-backend-dev
     ports:
       - "3001:3001"
+      - "3443:3443"
     environment:
       - NODE_ENV=development
-      - PORT=3001
-      - TWITTER_CLIENT_ID=${TWITTER_CLIENT_ID}
-      - TWITTER_CLIENT_SECRET=${TWITTER_CLIENT_SECRET}
-      - TWITTER_REDIRECT_URI=${TWITTER_REDIRECT_URI}
-      - FIRESTARTER_API_BASE_URL=${FIRESTARTER_API_BASE_URL}
     volumes:
       # Mount source code for hot reloading in development
       - ./server.js:/app/server.js:ro
